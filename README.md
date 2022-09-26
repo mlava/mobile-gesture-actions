@@ -17,6 +17,6 @@ Actions to select include:
 - toggle Left Sidebar
 - open Command Palette
 
-If you are not on a daily note page and you trigger go back or go forward one DNP, it will go to yesterday or tomorrow.
+If you are not on a daily note page and you trigger go back or go forward one DNP, it will go to yesterday or tomorrow. If you are on a DNP it will go back or forward by one day relative to the current page.
 
 New actions can be added on request.
