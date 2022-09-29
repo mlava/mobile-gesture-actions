@@ -237,7 +237,12 @@ async function resolveDNP(direction) {
     var newYear = thisDate.getFullYear().toString();
     var newDate = newMonth.padStart(2, "0") + "-" + newDay.padStart(2, "0") + "-" + newYear;
     var titleDate = convertToRoamDate(newDate);
-    await window.roamAlphaAPI.createPage({ page: { title: titleDate, uid: newDate } });
+    var page = await window.roamAlphaAPI.q(`
+    [:find ?e
+        :where [?e :node/title "${titleDate}"]]`);
+    if (page.length < 1) { // create new page
+        await window.roamAlphaAPI.createPage({ page: { title: titleDate, uid: newDate } });
+    }
     var results = window.roamAlphaAPI.data.pull("[:block/children]", [":block/uid", newDate]);
     if (results == null) {
         let newBlockUid = roamAlphaAPI.util.generateUID();
