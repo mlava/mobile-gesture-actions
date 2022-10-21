@@ -134,7 +134,7 @@ export default {
                 commandLP = "CP";
             }
         }
-        if (window.roamAlphaAPI.platform.isMobile || window.roamAlphaAPI.platform.isMobileApp) {
+        if (window.roamAlphaAPI.platform.isMobile || window.roamAlphaAPI.platform.isMobileApp || window.roamAlphaAPI.platform.isTouchDevice) {
             gesture.on('swipeleft', (event) => {
                 action(commandL);
             });
