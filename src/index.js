@@ -1,7 +1,7 @@
 import TinyGesture from 'tinygesture';
-var swipeL, swipeR, swipeU, swipeD, gestDT, gestLP, commandL, commandR, commandU, commandD, commandDT, commandLP, thisDate;
+var swipeL, swipeR, swipeU, swipeD, gestDT, gestLP, commandL, commandR, commandDT, commandLP, thisDate;
 
-const target = document.getElementsByClassName('roam-body-main');
+const target = document.getElementsByClassName('roam-body');
 const gesture = new TinyGesture(target[0]);
 
 export default {
@@ -134,7 +134,8 @@ export default {
                 commandLP = "CP";
             }
         }
-        if (window.roamAlphaAPI.platform.isMobile || window.roamAlphaAPI.platform.isMobileApp || window.roamAlphaAPI.platform.isTouchDevice) {
+
+        if (window.roamAlphaAPI.platform.isMobile || window.roamAlphaAPI.platform.isMobileApp || window.roamAlphaAPI.platform.isTouchDevice || window.roamAlphaAPI.platform.isIOS) {
             gesture.on('swipeleft', (event) => {
                 action(commandL);
             });
@@ -203,11 +204,11 @@ async function resolveDNP(direction) {
     var startBlock = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
     if (!startBlock) {
         var uri = window.location.href;
-        const regex = /^https:\/\/roamresearch.com\/#\/(app|offline)\/\w+$/; //today's DNP
+        const regex = /^https:\/\/roamresearch.com\/.+\/(app|offline)\/\w+$/; //today's DNP
         if (regex.test(uri)) { // this is Daily Notes for today
             var today = new Date();
             var dd = String(today.getDate()).padStart(2, '0');
-            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var mm = String(today.getMonth()).padStart(2, '0');
             var yyyy = today.getFullYear();
             thisDate = new Date(yyyy, mm, dd);
         }
