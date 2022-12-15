@@ -179,24 +179,45 @@ async function action(command) {
             await window.roamAlphaAPI.ui.leftSidebar.close();
         }
     } else if (command == "CP") { // working
-        window.dispatchEvent(new KeyboardEvent('keydown', {
-            key: "p",
-            keyCode: 80,
-            code: "KeyP",
-            which: 80,
-            shiftKey: false,
-            ctrlKey: true,
-            metaKey: false
-        }));
-        window.dispatchEvent(new KeyboardEvent('keyup', {
-            key: "p",
-            keyCode: 80,
-            code: "KeyP",
-            which: 80,
-            shiftKey: false,
-            ctrlKey: true,
-            metaKey: false
-        }));
+        if (!window.roamAlphaAPI.platform.isIOS) {
+            window.dispatchEvent(new KeyboardEvent('keydown', {
+                key: "p",
+                keyCode: 80,
+                code: "KeyP",
+                which: 80,
+                shiftKey: false,
+                ctrlKey: true,
+                metaKey: false
+            }));
+            window.dispatchEvent(new KeyboardEvent('keyup', {
+                key: "p",
+                keyCode: 80,
+                code: "KeyP",
+                which: 80,
+                shiftKey: false,
+                ctrlKey: true,
+                metaKey: false
+            }));
+        } else {
+            window.dispatchEvent(new KeyboardEvent('keydown', {
+                key: "p",
+                keyCode: 80,
+                code: "KeyP",
+                which: 80,
+                shiftKey: false,
+                ctrlKey: false,
+                metaKey: true
+            }));
+            window.dispatchEvent(new KeyboardEvent('keyup', {
+                key: "p",
+                keyCode: 80,
+                code: "KeyP",
+                which: 80,
+                shiftKey: false,
+                ctrlKey: false,
+                metaKey: true
+            }));
+        }
     }
 }
 
