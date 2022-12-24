@@ -4,6 +4,7 @@ Add swipe gestures and double tap / long press to your Roam Research mobile expe
 - Create a keyboard shortcut to trigger with a gesture.
   - Configure this in the Roam Depot settings
   - the first field is for the letter, number or other key for the shortcut
+    - this can be any letter (a-z), number (0-9), one of leftArrow, upArrow, rightArrow, downArrow, or any of ; , . / - =
   - the next two select menus allow you to set Ctrl/Meta, Shift and Alt/Opt
   
 For example, my Focus Mode extension uses the keyboard shortcut alt-shift-f.
