@@ -1,7 +1,7 @@
 import TinyGesture from "tinygesture";
 
 let gesture;
-var commandL, commandR, commandDT, commandLP, thisDate;
+var commandL, commandR, commandDT, commandLP, commandPinch, commandRotate, thisDate;
 
 export default {
     onload: ({ extensionAPI }) => {
