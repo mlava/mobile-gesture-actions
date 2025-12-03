@@ -160,7 +160,7 @@ export default {
             }
         }
 
-        if (window.roamAlphaAPI.platform.isMobile || window.roamAlphaAPI.platform.isMobileApp || window.roamAlphaAPI.platform.isTouchDevice || window.roamAlphaAPI.platform.isIOS) {
+        if (window.roamAlphaAPI.platform.isDesktop || window.roamAlphaAPI.platform.isMobile || window.roamAlphaAPI.platform.isMobileApp || window.roamAlphaAPI.platform.isTouchDevice || window.roamAlphaAPI.platform.isIOS) {
             gesture.on('swipeleft', (event) => {
                 action(commandL, { extensionAPI });
             });
