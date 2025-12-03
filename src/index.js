@@ -5,6 +5,20 @@ var commandL, commandR, commandDT, commandLP, commandPinch, commandRotate, thisD
 
 export default {
     onload: ({ extensionAPI }) => {
+        const gestureItems = [
+            "None",
+            "Back one day",
+            "Go to Today",
+            "Forward one day",
+            "Refresh",
+            "Undo",
+            "Redo",
+            "Toggle Right Sidebar",
+            "Toggle Left Sidebar",
+            "Open Command Palette",
+            "Keyboard Shortcut",
+        ];
+
         const config = {
             tabTitle: "Gesture Actions",
             settings: [
@@ -14,23 +28,11 @@ export default {
                     description: "Action to take on swipe left",
                     action: {
                         type: "select",
-                        items: [
-                            "None",
-                            "Back one day",
-                            "Go to Today",
-                            "Forward one day",
-                            "Refresh",
-                            "Undo",
-                            "Redo",
-                            "Toggle Right Sidebar",
-                            "Toggle Left Sidebar",
-                            "Open Command Palette",
-                            "Keyboard Shortcut"
-                        ],
+                        items: gestureItems,
                         onChange: (evt) => {
                             const value = evt?.value ?? evt?.target?.value ?? evt;
                             updateLeft(value);
-                        }
+                        },
                     },
                 },
                 {
@@ -39,23 +41,11 @@ export default {
                     description: "Action to take on swipe right",
                     action: {
                         type: "select",
-                        items: [
-                            "None",
-                            "Back one day",
-                            "Go to Today",
-                            "Forward one day",
-                            "Refresh",
-                            "Undo",
-                            "Redo",
-                            "Toggle Right Sidebar",
-                            "Toggle Left Sidebar",
-                            "Open Command Palette",
-                            "Keyboard Shortcut"
-                        ],
+                        items: gestureItems,
                         onChange: (evt) => {
                             const value = evt?.value ?? evt?.target?.value ?? evt;
                             updateRight(value);
-                        }
+                        },
                     },
                 },
                 {
@@ -64,23 +54,11 @@ export default {
                     description: "Action to take on double tap",
                     action: {
                         type: "select",
-                        items: [
-                            "None",
-                            "Back one day",
-                            "Go to Today",
-                            "Forward one day",
-                            "Refresh",
-                            "Undo",
-                            "Redo",
-                            "Toggle Right Sidebar",
-                            "Toggle Left Sidebar",
-                            "Open Command Palette",
-                            "Keyboard Shortcut"
-                        ],
+                        items: gestureItems,
                         onChange: (evt) => {
                             const value = evt?.value ?? evt?.target?.value ?? evt;
                             updateDT(value);
-                        }
+                        },
                     },
                 },
                 {
@@ -89,23 +67,11 @@ export default {
                     description: "Action to take on long press",
                     action: {
                         type: "select",
-                        items: [
-                            "None",
-                            "Back one day",
-                            "Go to Today",
-                            "Forward one day",
-                            "Refresh",
-                            "Undo",
-                            "Redo",
-                            "Toggle Right Sidebar",
-                            "Toggle Left Sidebar",
-                            "Open Command Palette",
-                            "Keyboard Shortcut"
-                        ],
+                        items: gestureItems,
                         onChange: (evt) => {
                             const value = evt?.value ?? evt?.target?.value ?? evt;
                             updateLP(value);
-                        }
+                        },
                     },
                 },
                 {
@@ -114,66 +80,42 @@ export default {
                     description: "Action to take on pinch",
                     action: {
                         type: "select",
-                        items: [
-                            "None",
-                            "Back one day",
-                            "Go to Today",
-                            "Forward one day",
-                            "Refresh",
-                            "Undo",
-                            "Redo",
-                            "Toggle Right Sidebar",
-                            "Toggle Left Sidebar",
-                            "Open Command Palette",
-                            "Keyboard Shortcut"
-                        ],
+                        items: gestureItems,
                         onChange: (evt) => {
                             const value = evt?.value ?? evt?.target?.value ?? evt;
                             updatePinch(value);
-                        }
+                        },
                     },
                 },
                 {
-                    id: "ga-lp",
+                    id: "ga-rotate",
                     name: "Rotate",
                     description: "Action to take on rotate",
                     action: {
                         type: "select",
-                        items: [
-                            "None",
-                            "Back one day",
-                            "Go to Today",
-                            "Forward one day",
-                            "Refresh",
-                            "Undo",
-                            "Redo",
-                            "Toggle Right Sidebar",
-                            "Toggle Left Sidebar",
-                            "Open Command Palette",
-                            "Keyboard Shortcut"
-                        ],
+                        items: gestureItems,
                         onChange: (evt) => {
                             const value = evt?.value ?? evt?.target?.value ?? evt;
                             updateRotate(value);
-                        }
+                        },
                     },
                 },
                 {
                     id: "ga-kb-1",
                     name: "Keyboard Shortcut Key (a-z 0-9 ; , . / leftArrow upArrow rightArrow downArrow - =",
-                    action: { type: "input", placeholder: "keyboard shortcut key" }
+                    action: { type: "input", placeholder: "keyboard shortcut key" },
                 },
                 {
                     id: "ga-kb-2",
                     name: "Keyboard Shortcut Modifier 1",
-                    action: { type: "select", items: ["None", "Ctrl/Meta", "Shift", "Alt/Opt"] }
+                    action: { type: "select", items: ["None", "Ctrl/Meta", "Shift", "Alt/Opt"] },
                 },
                 {
                     id: "ga-kb-3",
                     name: "Keyboard Shortcut Modifier 2",
-                    action: { type: "select", items: ["None", "Ctrl/Meta", "Shift", "Alt/Opt"] }
+                    action: { type: "select", items: ["None", "Ctrl/Meta", "Shift", "Alt/Opt"] },
                 },
-            ]
+            ],
         };
 
         extensionAPI.settings.panel.create(config);
@@ -225,7 +167,7 @@ export default {
             gesture.destroy();
             gesture = null;
         }
-    }
+    },
 };
 
 function updateLeft(swipeL) {
@@ -237,8 +179,6 @@ function updateLeft(swipeL) {
         commandL = "backward";
     } else if (swipeL === "Refresh") {
         commandL = "refresh";
-    } else if (swipeL === "Right Click") {
-        commandL = "rightclick";
     } else if (swipeL === "Undo") {
         commandL = "undo";
     } else if (swipeL === "Redo") {
@@ -265,8 +205,6 @@ function updateRight(swipeR) {
         commandR = "backward";
     } else if (swipeR === "Refresh") {
         commandR = "refresh";
-    } else if (swipeR === "Right Click") {
-        commandR = "rightclick";
     } else if (swipeR === "Undo") {
         commandR = "undo";
     } else if (swipeR === "Redo") {
@@ -293,8 +231,6 @@ function updateDT(gestDT) {
         commandDT = "backward";
     } else if (gestDT === "Refresh") {
         commandDT = "refresh";
-    } else if (gestDT === "Right Click") {
-        commandDT = "rightclick";
     } else if (gestDT === "Undo") {
         commandDT = "undo";
     } else if (gestDT === "Redo") {
@@ -305,8 +241,6 @@ function updateDT(gestDT) {
         commandDT = "LSToggle";
     } else if (gestDT === "Open Command Palette") {
         commandDT = "CP";
-    } else if (gestDT === "Copy Block Reference") {
-        commandDT = "CBR";
     } else if (gestDT === "Keyboard Shortcut") {
         commandDT = "KbS";
     } else {
@@ -323,8 +257,6 @@ function updateLP(gestLP) {
         commandLP = "backward";
     } else if (gestLP === "Refresh") {
         commandLP = "refresh";
-    } else if (gestLP === "Right Click") {
-        commandLP = "rightclick";
     } else if (gestLP === "Undo") {
         commandLP = "undo";
     } else if (gestLP === "Redo") {
@@ -361,8 +293,6 @@ function updatePinch(gestPinch) {
         commandPinch = "LSToggle";
     } else if (gestPinch === "Open Command Palette") {
         commandPinch = "CP";
-    } else if (gestPinch === "Copy Block Reference") {
-        commandPinch = "CBR";
     } else if (gestPinch === "Keyboard Shortcut") {
         commandPinch = "KbS";
     } else {
@@ -419,7 +349,9 @@ async function action(command, { extensionAPI }) {
         }
     } else if (command === "CP") {
         try {
-            const isMac = navigator.platform.toLowerCase().includes("mac");
+            const isMac = typeof navigator !== "undefined" &&
+                navigator.platform &&
+                navigator.platform.toLowerCase().includes("mac");
             const eventInit = {
                 key: "p",
                 code: "KeyP",
@@ -430,7 +362,7 @@ async function action(command, { extensionAPI }) {
                 shiftKey: false,
                 altKey: false,
                 ctrlKey: !isMac,
-                metaKey: isMac
+                metaKey: !!isMac,
             };
             const down = new KeyboardEvent("keydown", eventInit);
             const up = new KeyboardEvent("keyup", eventInit);
@@ -439,47 +371,7 @@ async function action(command, { extensionAPI }) {
         } catch (e) {
             console.error("Gesture Actions: failed to dispatch Command Palette shortcut", e);
         }
-    } /* else if (command === "CBR") {
-        if (!window.roamAlphaAPI.platform.isIOS) {
-            window.dispatchEvent(new KeyboardEvent("keydown", {
-                key: "c",
-                keyCode: 67,
-                code: "KeyC",
-                which: 67,
-                shiftKey: true,
-                ctrlKey: true,
-                altKey: false
-            }));
-            window.dispatchEvent(new KeyboardEvent("keyup", {
-                key: "c",
-                keyCode: 67,
-                code: "KeyC",
-                which: 67,
-                shiftKey: true,
-                ctrlKey: true,
-                altKey: false
-            }));
-        } else {
-            window.dispatchEvent(new KeyboardEvent("keydown", {
-                key: "c",
-                keyCode: 67,
-                code: "KeyC",
-                which: 67,
-                shiftKey: true,
-                altKey: false,
-                metaKey: true
-            }));
-            window.dispatchEvent(new KeyboardEvent("keyup", {
-                key: "c",
-                keyCode: 67,
-                code: "KeyC",
-                which: 67,
-                shiftKey: true,
-                altKey: false,
-                metaKey: true
-            }));
-        }
-    } */ else if (command === "KbS") {
+    } else if (command === "KbS") {
         let kb1, kb2, kb3, kb1Code, kb1Which;
         let altKey = false;
         let metaKey = false;
@@ -496,7 +388,7 @@ async function action(command, { extensionAPI }) {
             kb3 = extensionAPI.settings.get("ga-kb-3");
         }
 
-        // Map key to code/which
+        // Map key to code/which (unchanged from your version)
         if (kb1 === "0") {
             kb1Code = "Digit0";
             kb1Which = 48;
@@ -663,7 +555,7 @@ async function action(command, { extensionAPI }) {
                 which: kb1Which,
                 shiftKey,
                 ctrlKey,
-                altKey
+                altKey,
             }));
             window.dispatchEvent(new KeyboardEvent("keyup", {
                 key: kb1,
@@ -672,7 +564,7 @@ async function action(command, { extensionAPI }) {
                 which: kb1Which,
                 shiftKey,
                 ctrlKey,
-                altKey
+                altKey,
             }));
         } else {
             window.dispatchEvent(new KeyboardEvent("keydown", {
@@ -682,7 +574,7 @@ async function action(command, { extensionAPI }) {
                 which: kb1Which,
                 shiftKey,
                 ctrlKey,
-                altKey
+                altKey,
             }));
             window.dispatchEvent(new KeyboardEvent("keyup", {
                 key: kb1,
@@ -691,34 +583,34 @@ async function action(command, { extensionAPI }) {
                 which: kb1Which,
                 shiftKey,
                 metaKey,
-                altKey
+                altKey,
             }));
         }
     }
 }
 
 async function resolveDNP(direction) {
-    var startBlock = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
+    const startBlock = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
     if (!startBlock) {
-        var uri = window.location.href;
+        const uri = window.location.href;
         const regex = /^https:\/\/roamresearch.com\/.+\/(app|offline)\/\w+$/; // today's DNP
-        if (regex.test(uri)) { // this is Daily Notes for today
-            var today = new Date();
-            var dd = String(today.getDate()).padStart(2, "0");
-            var mm = String(today.getMonth()).padStart(2, "0");
-            var yyyy = today.getFullYear();
+        if (regex.test(uri)) {
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, "0");
+            const mm = String(today.getMonth()).padStart(2, "0"); // 0-based month OK
+            const yyyy = today.getFullYear();
             thisDate = new Date(yyyy, mm, dd);
         }
     } else {
-        let q = `[:find (pull ?page [:node/title :block/string :block/uid {:block/children ...} ]) :where [?page :block/uid "${startBlock}"]  ]`;
-        var info = await window.roamAlphaAPI.q(q);
+        const q = `[:find (pull ?page [:node/title :block/string :block/uid {:block/children ...} ]) :where [?page :block/uid "${startBlock}"]  ]`;
+        const info = await window.roamAlphaAPI.q(q);
         const regex = /\d{2}-\d{2}-\d{4}/;
-        if (regex.test(info[0][0].uid)) { // dated DNP
-            let dateBits = info[0][0].uid.split("-");
-            let mm = String(parseInt(dateBits[0]) - 1);
+        if (regex.test(info[0][0].uid)) {
+            const dateBits = info[0][0].uid.split("-");
+            const mm = String(parseInt(dateBits[0], 10) - 1);
             thisDate = new Date(dateBits[2], mm, dateBits[1]);
-        } else { // not a dated DNP
-            thisDate = new Date(new Date().setDate(new Date().getDate()));
+        } else {
+            thisDate = new Date();
         }
     }
 
@@ -730,29 +622,33 @@ async function resolveDNP(direction) {
         thisDate = new Date();
     }
 
-    var newMonth = (thisDate.getMonth() + 1).toString();
-    var newDay = thisDate.getDate().toString();
-    var newYear = thisDate.getFullYear().toString();
-    var newDate = newMonth.padStart(2, "0") + "-" + newDay.padStart(2, "0") + "-" + newYear;
-    var titleDate = convertToRoamDate(newDate);
-    var page = await window.roamAlphaAPI.q(`
+    const newMonth = (thisDate.getMonth() + 1).toString();
+    const newDay = thisDate.getDate().toString();
+    const newYear = thisDate.getFullYear().toString();
+    const newDate = newMonth.padStart(2, "0") + "-" + newDay.padStart(2, "0") + "-" + newYear;
+    const titleDate = convertToRoamDate(newDate);
+
+    const page = await window.roamAlphaAPI.q(`
     [:find ?e
         :where [?e :node/title "${titleDate}"]]`);
-    if (page.length < 1) { // create new page
+    if (page.length < 1) {
         await window.roamAlphaAPI.createPage({ page: { title: titleDate, uid: newDate } });
     }
-    var results = window.roamAlphaAPI.data.pull("[:block/children]", [":block/uid", newDate]);
+    const results = window.roamAlphaAPI.data.pull("[:block/children]", [":block/uid", newDate]);
     if (results == null) {
-        let newBlockUid = roamAlphaAPI.util.generateUID();
-        await window.roamAlphaAPI.createBlock({ location: { "parent-uid": newDate, order: 0 }, block: { string: "", uid: newBlockUid } });
+        const newBlockUid = window.roamAlphaAPI.util.generateUID();
+        await window.roamAlphaAPI.createBlock({
+            location: { "parent-uid": newDate, order: 0 },
+            block: { string: "", uid: newBlockUid },
+        });
     }
     window.roamAlphaAPI.ui.mainWindow.openBlock({ block: { uid: newDate } });
 }
 
 function convertToRoamDate(dateString) {
-    var parsedDate = dateString.split("-");
-    var year = parsedDate[2];
-    var month = Number(parsedDate[0]);
+    const parsedDate = dateString.split("-");
+    const year = parsedDate[2];
+    const month = Number(parsedDate[0]);
     const months = [
         "January",
         "February",
@@ -765,11 +661,11 @@ function convertToRoamDate(dateString) {
         "September",
         "October",
         "November",
-        "December"
+        "December",
     ];
-    var monthName = months[month - 1];
-    var day = Number(parsedDate[1]);
-    let suffix =
+    const monthName = months[month - 1];
+    const day = Number(parsedDate[1]);
+    const suffix =
         (day >= 4 && day <= 20) || (day >= 24 && day <= 30)
             ? "th"
             : ["st", "nd", "rd"][day % 10 - 1];
