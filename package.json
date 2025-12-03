@@ -1,14 +1,14 @@
 {
   "name": "mobile-gesture-actions",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "extension.js",
   "dependencies": {
-    "tinygesture": "^2.0.0"
+    "tinygesture": "^3.0.0"
   },
   "devDependencies": {
-    "webpack": "^5.74.0",
-    "webpack-cli": "^4.10.0"
+    "webpack": "^5.103.0",
+    "webpack-cli": "^6.0.1"
   },
   "scripts": {
     "build": "webpack"
