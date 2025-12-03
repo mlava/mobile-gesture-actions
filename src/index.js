@@ -1,7 +1,7 @@
 import TinyGesture from "tinygesture";
 
 let gesture;
-var swipeL, swipeR, swipeU, swipeD, gestDT, gestLP, commandL, commandR, commandDT, commandLP, thisDate;
+var commandL, commandR, commandDT, commandLP, thisDate;
 
 export default {
     onload: ({ extensionAPI }) => {
@@ -20,7 +20,7 @@ export default {
                             "Go to Today",
                             "Forward one day",
                             "Refresh",
-                            /*"Right Click", */ "Undo",
+                            "Undo",
                             "Redo",
                             "Toggle Right Sidebar",
                             "Toggle Left Sidebar",
@@ -45,7 +45,7 @@ export default {
                             "Go to Today",
                             "Forward one day",
                             "Refresh",
-                            /*"Right Click", */ "Undo",
+                            "Undo",
                             "Redo",
                             "Toggle Right Sidebar",
                             "Toggle Left Sidebar",
@@ -70,7 +70,7 @@ export default {
                             "Go to Today",
                             "Forward one day",
                             "Refresh",
-                            /*"Right Click", */ "Undo",
+                            "Undo",
                             "Redo",
                             "Toggle Right Sidebar",
                             "Toggle Left Sidebar",
@@ -95,7 +95,7 @@ export default {
                             "Go to Today",
                             "Forward one day",
                             "Refresh",
-                            /*"Right Click", */ "Undo",
+                            "Undo",
                             "Redo",
                             "Toggle Right Sidebar",
                             "Toggle Left Sidebar",
@@ -105,6 +105,56 @@ export default {
                         onChange: (evt) => {
                             const value = evt?.value ?? evt?.target?.value ?? evt;
                             updateLP(value);
+                        }
+                    },
+                },
+                {
+                    id: "ga-pinch",
+                    name: "Pinch",
+                    description: "Action to take on pinch",
+                    action: {
+                        type: "select",
+                        items: [
+                            "None",
+                            "Back one day",
+                            "Go to Today",
+                            "Forward one day",
+                            "Refresh",
+                            "Undo",
+                            "Redo",
+                            "Toggle Right Sidebar",
+                            "Toggle Left Sidebar",
+                            "Open Command Palette",
+                            "Keyboard Shortcut"
+                        ],
+                        onChange: (evt) => {
+                            const value = evt?.value ?? evt?.target?.value ?? evt;
+                            updatePinch(value);
+                        }
+                    },
+                },
+                {
+                    id: "ga-lp",
+                    name: "Rotate",
+                    description: "Action to take on rotate",
+                    action: {
+                        type: "select",
+                        items: [
+                            "None",
+                            "Back one day",
+                            "Go to Today",
+                            "Forward one day",
+                            "Refresh",
+                            "Undo",
+                            "Redo",
+                            "Toggle Right Sidebar",
+                            "Toggle Left Sidebar",
+                            "Open Command Palette",
+                            "Keyboard Shortcut"
+                        ],
+                        onChange: (evt) => {
+                            const value = evt?.value ?? evt?.target?.value ?? evt;
+                            updateRotate(value);
                         }
                     },
                 },
@@ -128,7 +178,6 @@ export default {
 
         extensionAPI.settings.panel.create(config);
 
-        // Initialise gesture target safely
         const target = document.getElementsByClassName("roam-body");
         if (!target[0]) {
             console.warn("Gesture Actions: .roam-body not found; gestures not attached.");
@@ -141,11 +190,12 @@ export default {
         updateRight(extensionAPI.settings.get("ga-right"));
         updateDT(extensionAPI.settings.get("ga-dt"));
         updateLP(extensionAPI.settings.get("ga-lp"));
+        updatePinch(extensionAPI.settings.get("ga-pinch"));
+        updateRotate(extensionAPI.settings.get("ga-rotate"));
 
         if (
             window.roamAlphaAPI?.platform &&
-            (window.roamAlphaAPI.platform.isDesktop ||
-                window.roamAlphaAPI.platform.isMobile ||
+            (window.roamAlphaAPI.platform.isMobile ||
                 window.roamAlphaAPI.platform.isMobileApp ||
                 window.roamAlphaAPI.platform.isTouchDevice ||
                 window.roamAlphaAPI.platform.isIOS)
@@ -161,6 +211,12 @@ export default {
             });
             gesture.on("longpress", () => {
                 action(commandLP, { extensionAPI });
+            });
+            gesture.on("pinch", () => {
+                action(commandPinch, { extensionAPI });
+            });
+            gesture.on("rotate", () => {
+                action(commandRotate, { extensionAPI });
             });
         }
     },
@@ -286,6 +342,60 @@ function updateLP(gestLP) {
     }
 }
 
+function updatePinch(gestPinch) {
+    if (gestPinch === "Forward one day") {
+        commandPinch = "forward";
+    } else if (gestPinch === "Go to Today") {
+        commandPinch = "today";
+    } else if (gestPinch === "Back one day") {
+        commandPinch = "backward";
+    } else if (gestPinch === "Refresh") {
+        commandPinch = "refresh";
+    } else if (gestPinch === "Undo") {
+        commandPinch = "undo";
+    } else if (gestPinch === "Redo") {
+        commandPinch = "redo";
+    } else if (gestPinch === "Toggle Right Sidebar") {
+        commandPinch = "RSToggle";
+    } else if (gestPinch === "Toggle Left Sidebar") {
+        commandPinch = "LSToggle";
+    } else if (gestPinch === "Open Command Palette") {
+        commandPinch = "CP";
+    } else if (gestPinch === "Copy Block Reference") {
+        commandPinch = "CBR";
+    } else if (gestPinch === "Keyboard Shortcut") {
+        commandPinch = "KbS";
+    } else {
+        commandPinch = null;
+    }
+}
+
+function updateRotate(gestRotate) {
+    if (gestRotate === "Forward one day") {
+        commandRotate = "forward";
+    } else if (gestRotate === "Go to Today") {
+        commandRotate = "today";
+    } else if (gestRotate === "Back one day") {
+        commandRotate = "backward";
+    } else if (gestRotate === "Refresh") {
+        commandRotate = "refresh";
+    } else if (gestRotate === "Undo") {
+        commandRotate = "undo";
+    } else if (gestRotate === "Redo") {
+        commandRotate = "redo";
+    } else if (gestRotate === "Toggle Right Sidebar") {
+        commandRotate = "RSToggle";
+    } else if (gestRotate === "Toggle Left Sidebar") {
+        commandRotate = "LSToggle";
+    } else if (gestRotate === "Open Command Palette") {
+        commandRotate = "CP";
+    } else if (gestRotate === "Keyboard Shortcut") {
+        commandRotate = "KbS";
+    } else {
+        commandRotate = null;
+    }
+}
+
 async function action(command, { extensionAPI }) {
     if (command === "forward" || command === "backward" || command === "today") {
         await resolveDNP(command);
@@ -295,8 +405,6 @@ async function action(command, { extensionAPI }) {
         await window.roamAlphaAPI.data.undo();
     } else if (command === "redo") {
         await window.roamAlphaAPI.data.redo();
-    } else if (command === "rightclick") {
-        // TODO: implement if desired
     } else if (command === "RSToggle") {
         if (document.querySelector("#roam-right-sidebar-content")) {
             await window.roamAlphaAPI.ui.rightSidebar.close();
@@ -310,8 +418,6 @@ async function action(command, { extensionAPI }) {
             await window.roamAlphaAPI.ui.leftSidebar.close();
         }
     } else if (command === "CP") {
-        // Best-effort: simulate the Cmd/Ctrl+P shortcut on desktop.
-        // NOTE: this may not work on mobile or if Roam ignores synthetic events.
         try {
             const isMac = navigator.platform.toLowerCase().includes("mac");
             const eventInit = {
@@ -333,8 +439,7 @@ async function action(command, { extensionAPI }) {
         } catch (e) {
             console.error("Gesture Actions: failed to dispatch Command Palette shortcut", e);
         }
-    } else if (command === "CBR") {
-        // Copy Block Reference (likely only reliable on desktop)
+    } /* else if (command === "CBR") {
         if (!window.roamAlphaAPI.platform.isIOS) {
             window.dispatchEvent(new KeyboardEvent("keydown", {
                 key: "c",
@@ -374,7 +479,7 @@ async function action(command, { extensionAPI }) {
                 metaKey: true
             }));
         }
-    } else if (command === "KbS") {
+    } */ else if (command === "KbS") {
         let kb1, kb2, kb3, kb1Code, kb1Which;
         let altKey = false;
         let metaKey = false;
