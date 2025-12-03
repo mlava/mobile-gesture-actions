@@ -1,4 +1,4 @@
-Add swipe gestures and double tap / long press to your Roam Research mobile experience.
+Add swipe gestures, pinch, rotate, double-tap and long-press to your Roam Research mobile experience.
 
 **New:**
 - updated code to ensure keyboard shortcuts fire
@@ -21,6 +21,8 @@ This extension allows you to define actions to perform when it recognises:
 - swipe right
 - double tap
 - long press
+- pinch
+- rotate
 
 Actions to select include:
 - go to Today's DNP
@@ -35,7 +37,5 @@ Actions to select include:
 - trigger a keyboard shortcut
 
 If you are not on a daily note page and you trigger go back or go forward one DNP, it will go to yesterday or tomorrow. If you are on a DNP it will go back or forward by one day relative to the current page.
-
-New actions can be added on request.
 
 Note that swipe up and down have not been included as they are already required for scrolling within Roam pages. If someone has a compelling reason why they need these gestures, I will be happy to add them as options.
