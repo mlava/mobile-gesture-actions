@@ -592,23 +592,21 @@ async function action(command, { extensionAPI }) {
 async function resolveDNP(direction) {
     const startBlock = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
     if (!startBlock) {
-        const uri = window.location.href;
-        const regex = /^https:\/\/roamresearch.com\/.+\/(app|offline)\/\w+$/; // today's DNP
-        if (regex.test(uri)) {
-            const today = new Date();
-            const dd = String(today.getDate()).padStart(2, "0");
-            const mm = String(today.getMonth()).padStart(2, "0"); // 0-based month OK
-            const yyyy = today.getFullYear();
-            thisDate = new Date(yyyy, mm, dd);
+        // getOpenPageOrBlockUid() returns null on the daily notes log view.
+        // Read today's DNP UID from the topmost log page in the DOM and parse
+        // its date components — avoids URL-shape regex and stays aligned with
+        // the page Roam is actually showing (rather than the local system clock).
+        const logPageUid = document
+            .querySelector(".roam-log-page .rm-title-display-container[data-page-uid]")
+            ?.getAttribute("data-page-uid");
+        const m = logPageUid?.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if (m) {
+            thisDate = new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]));
         }
     } else {
-        const q = `[:find (pull ?page [:node/title :block/string :block/uid {:block/children ...} ]) :where [?page :block/uid "${startBlock}"]  ]`;
-        const info = await window.roamAlphaAPI.q(q);
-        const regex = /\d{2}-\d{2}-\d{4}/;
-        if (regex.test(info[0][0].uid)) {
-            const dateBits = info[0][0].uid.split("-");
-            const mm = String(parseInt(dateBits[0], 10) - 1);
-            thisDate = new Date(dateBits[2], mm, dateBits[1]);
+        const m = startBlock.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if (m) {
+            thisDate = new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]));
         } else {
             thisDate = new Date();
         }
@@ -622,11 +620,8 @@ async function resolveDNP(direction) {
         thisDate = new Date();
     }
 
-    const newMonth = (thisDate.getMonth() + 1).toString();
-    const newDay = thisDate.getDate().toString();
-    const newYear = thisDate.getFullYear().toString();
-    const newDate = newMonth.padStart(2, "0") + "-" + newDay.padStart(2, "0") + "-" + newYear;
-    const titleDate = convertToRoamDate(newDate);
+    const newDate = window.roamAlphaAPI.util.dateToPageUid(thisDate);
+    const titleDate = window.roamAlphaAPI.util.dateToPageTitle(thisDate);
 
     const page = await window.roamAlphaAPI.q(`
     [:find ?e
@@ -643,31 +638,4 @@ async function resolveDNP(direction) {
         });
     }
     window.roamAlphaAPI.ui.mainWindow.openBlock({ block: { uid: newDate } });
-}
-
-function convertToRoamDate(dateString) {
-    const parsedDate = dateString.split("-");
-    const year = parsedDate[2];
-    const month = Number(parsedDate[0]);
-    const months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ];
-    const monthName = months[month - 1];
-    const day = Number(parsedDate[1]);
-    const suffix =
-        (day >= 4 && day <= 20) || (day >= 24 && day <= 30)
-            ? "th"
-            : ["st", "nd", "rd"][day % 10 - 1];
-    return `${monthName} ${day}${suffix}, ${year}`;
 }
