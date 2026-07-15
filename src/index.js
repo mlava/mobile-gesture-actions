@@ -1,6 +1,10 @@
 import TinyGesture from "tinygesture";
 
 let gesture;
+let pinchFired = false;
+let rotateFired = false;
+const PINCH_SCALE_THRESHOLD = 0.2; // require ≥20% distance change before pinch fires once
+const ROTATE_DEG_THRESHOLD = 15;   // require ≥15° rotation before rotate fires once
 var commandL, commandR, commandDT, commandLP, commandPinch, commandRotate, thisDate;
 
 export default {
@@ -142,24 +146,46 @@ export default {
                 window.roamAlphaAPI.platform.isTouchDevice ||
                 window.roamAlphaAPI.platform.isIOS)
         ) {
-            gesture.on("swipeleft", () => {
-                action(commandL, { extensionAPI });
+            // Temporary diagnostics (issue #2): confirms the platform guard
+            // passed and handlers were attached. If no "detected" logs follow
+            // a gesture, TinyGesture isn't receiving touch events (propagation
+            // stopped below .roam-body, or native app interception).
+            console.debug("Gesture Actions: attaching handlers to .roam-body", {
+                isMobile: window.roamAlphaAPI.platform.isMobile,
+                isMobileApp: window.roamAlphaAPI.platform.isMobileApp,
+                isTouchDevice: window.roamAlphaAPI.platform.isTouchDevice,
+                isIOS: window.roamAlphaAPI.platform.isIOS,
             });
-            gesture.on("swiperight", () => {
-                action(commandR, { extensionAPI });
-            });
-            gesture.on("doubletap", () => {
-                action(commandDT, { extensionAPI });
-            });
-            gesture.on("longpress", () => {
-                action(commandLP, { extensionAPI });
-            });
+
+            const runGesture = (name, command) => {
+                console.debug(`Gesture Actions: '${name}' detected → action='${command ?? "None"}'`);
+                action(command, { extensionAPI });
+            };
+
+            gesture.on("swipeleft", () => runGesture("swipeleft", commandL));
+            gesture.on("swiperight", () => runGesture("swiperight", commandR));
+            gesture.on("doubletap", () => runGesture("doubletap", commandDT));
+            gesture.on("longpress", () => runGesture("longpress", commandLP));
+
+            // pinch/rotate fire on EVERY two-finger move in TinyGesture, with no
+            // threshold — binding them directly fires the action dozens of times
+            // per gesture (a data hazard for Undo/Redo and navigation). Latch to
+            // one fire per gesture, gated on a meaningful scale/angle change.
             gesture.on("pinch", () => {
-                action(commandPinch, { extensionAPI });
+                if (pinchFired) return;
+                if (Math.abs((gesture.scale ?? 1) - 1) < PINCH_SCALE_THRESHOLD) return;
+                pinchFired = true;
+                runGesture("pinch", commandPinch);
             });
             gesture.on("rotate", () => {
-                action(commandRotate, { extensionAPI });
+                if (rotateFired) return;
+                if (Math.abs(gesture.rotation ?? 0) < ROTATE_DEG_THRESHOLD) return;
+                rotateFired = true;
+                runGesture("rotate", commandRotate);
             });
+            // pinchend/rotateend fire once all fingers lift — reset the latches.
+            gesture.on("pinchend", () => { pinchFired = false; });
+            gesture.on("rotateend", () => { rotateFired = false; });
         }
     },
     onunload: () => {
@@ -167,6 +193,8 @@ export default {
             gesture.destroy();
             gesture = null;
         }
+        pinchFired = false;
+        rotateFired = false;
     },
 };
 
@@ -547,45 +575,25 @@ async function action(command, { extensionAPI }) {
             altKey = true;
         }
 
-        if (!window.roamAlphaAPI.platform.isIOS) {
-            window.dispatchEvent(new KeyboardEvent("keydown", {
-                key: kb1,
-                keyCode: kb1Which,
-                code: kb1Code,
-                which: kb1Which,
-                shiftKey,
-                ctrlKey,
-                altKey,
-            }));
-            window.dispatchEvent(new KeyboardEvent("keyup", {
-                key: kb1,
-                keyCode: kb1Which,
-                code: kb1Code,
-                which: kb1Which,
-                shiftKey,
-                ctrlKey,
-                altKey,
-            }));
-        } else {
-            window.dispatchEvent(new KeyboardEvent("keydown", {
-                key: kb1,
-                keyCode: kb1Which,
-                code: kb1Code,
-                which: kb1Which,
-                shiftKey,
-                ctrlKey,
-                altKey,
-            }));
-            window.dispatchEvent(new KeyboardEvent("keyup", {
-                key: kb1,
-                keyCode: kb1Which,
-                code: kb1Code,
-                which: kb1Which,
-                shiftKey,
-                metaKey,
-                altKey,
-            }));
-        }
+        // Dispatch on `document` with bubbles/cancelable so Roam's hotkey
+        // handler (bound at document level) receives it — the same mechanism
+        // the working Command Palette action uses. Dispatching on `window`
+        // (the previous behaviour) never reaches document-level listeners.
+        // Pass all four modifier flags so Ctrl/Meta shortcuts match too.
+        const eventInit = {
+            key: kb1,
+            code: kb1Code,
+            keyCode: kb1Which,
+            which: kb1Which,
+            shiftKey,
+            ctrlKey,
+            altKey,
+            metaKey,
+            bubbles: true,
+            cancelable: true,
+        };
+        document.dispatchEvent(new KeyboardEvent("keydown", eventInit));
+        document.dispatchEvent(new KeyboardEvent("keyup", eventInit));
     }
 }
 
