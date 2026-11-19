@@ -154,7 +154,13 @@ export default {
                 isIOS: window.roamAlphaAPI.platform.isIOS,
             });
 
-            attachGesture();
+            attachGesture(() => {
+                // A cancel mid-gesture means the native app shell or OS claimed
+                // the touch — the key signal for issue #2 triage.
+                if (extensionAPI.settings.get("ga-debug") === true) {
+                    showDebugToast("touch cancelled by the app/OS");
+                }
+            });
 
             const runGesture = (name, command) => {
                 console.debug(`Gesture Actions: '${name}' detected → action='${command ?? "None"}'`);
@@ -206,7 +212,7 @@ export default {
 // us. We instead listen in the capture phase on `document`, which runs before
 // any of Roam's handlers and does not depend on .roam-body existing at onload.
 // All listeners are passive: we never block scrolling or Roam's own handling.
-function attachGesture() {
+function attachGesture(onCancel) {
     detachGesture(); // idempotent: never stack listeners on re-load
     const root = document.documentElement;
     gesture = new TinyGesture(root, { mouseSupport: false });
@@ -229,7 +235,11 @@ function attachGesture() {
         // (system gesture, native long-press menu), touch1 is never cleared and
         // the next touch is misread as a second finger, so that gesture is
         // lost. Reset state instead of treating it as a gesture end.
-        touchcancel: () => resetGestureState(g),
+        touchcancel: () => {
+            const wasTracking = g.touch1 != null;
+            resetGestureState(g);
+            if (wasTracking) onCancel?.();
+        },
     };
     for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
         document.addEventListener(type, gestureListeners[type], opts);
