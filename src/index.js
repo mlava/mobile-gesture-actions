@@ -1,6 +1,8 @@
 import TinyGesture from "tinygesture";
 
 let gesture;
+let gestureListeners = null; // capture-phase listeners we own (removed on unload)
+let debugToastTimer = null;
 let pinchFired = false;
 let rotateFired = false;
 const PINCH_SCALE_THRESHOLD = 0.2; // require ≥20% distance change before pinch fires once
@@ -119,17 +121,16 @@ export default {
                     name: "Keyboard Shortcut Modifier 2",
                     action: { type: "select", items: ["None", "Ctrl/Meta", "Shift", "Alt/Opt"] },
                 },
+                {
+                    id: "ga-debug",
+                    name: "Show gesture notifications",
+                    description: "Troubleshooting: briefly show an on-screen notice each time a gesture is recognised, and which action it triggered.",
+                    action: { type: "switch" },
+                },
             ],
         };
 
         extensionAPI.settings.panel.create(config);
-
-        const target = document.getElementsByClassName("roam-body");
-        if (!target[0]) {
-            console.warn("Gesture Actions: .roam-body not found; gestures not attached.");
-            return;
-        }
-        gesture = new TinyGesture(target[0]);
 
         // Initialise commands from saved settings
         updateLeft(extensionAPI.settings.get("ga-left"));
@@ -146,19 +147,26 @@ export default {
                 window.roamAlphaAPI.platform.isTouchDevice ||
                 window.roamAlphaAPI.platform.isIOS)
         ) {
-            // Temporary diagnostics (issue #2): confirms the platform guard
-            // passed and handlers were attached. If no "detected" logs follow
-            // a gesture, TinyGesture isn't receiving touch events (propagation
-            // stopped below .roam-body, or native app interception).
-            console.debug("Gesture Actions: attaching handlers to .roam-body", {
+            console.debug("Gesture Actions: attaching capture-phase touch handlers", {
                 isMobile: window.roamAlphaAPI.platform.isMobile,
                 isMobileApp: window.roamAlphaAPI.platform.isMobileApp,
                 isTouchDevice: window.roamAlphaAPI.platform.isTouchDevice,
                 isIOS: window.roamAlphaAPI.platform.isIOS,
             });
 
+            attachGesture(() => {
+                // A cancel mid-gesture means the native app shell or OS claimed
+                // the touch — the key signal for issue #2 triage.
+                if (extensionAPI.settings.get("ga-debug") === true) {
+                    showDebugToast("touch cancelled by the app/OS");
+                }
+            });
+
             const runGesture = (name, command) => {
                 console.debug(`Gesture Actions: '${name}' detected → action='${command ?? "None"}'`);
+                if (extensionAPI.settings.get("ga-debug") === true) {
+                    showDebugToast(`${name} → ${command ?? "no action set"}`);
+                }
                 action(command, { extensionAPI });
             };
 
@@ -189,14 +197,102 @@ export default {
         }
     },
     onunload: () => {
-        if (gesture && typeof gesture.destroy === "function") {
-            gesture.destroy();
-            gesture = null;
-        }
+        detachGesture();
+        clearTimeout(debugToastTimer);
+        debugToastTimer = null;
+        document.getElementById("ga-debug-toast")?.remove();
         pinchFired = false;
         rotateFired = false;
     },
 };
+
+// TinyGesture binds bubble-phase listeners to the element it is given. In Roam
+// mobile, block-level touch handlers (swipe-to-indent, long-press menu) can stop
+// propagation before a touch bubbles up to .roam-body, so gestures never reach
+// us. We instead listen in the capture phase on `document`, which runs before
+// any of Roam's handlers and does not depend on .roam-body existing at onload.
+// All listeners are passive: we never block scrolling or Roam's own handling.
+function attachGesture(onCancel) {
+    detachGesture(); // idempotent: never stack listeners on re-load
+    const root = document.documentElement;
+    gesture = new TinyGesture(root, { mouseSupport: false });
+    root.removeEventListener("touchstart", gesture._onTouchStart);
+    root.removeEventListener("touchmove", gesture._onTouchMove);
+    root.removeEventListener("touchend", gesture._onTouchEnd);
+
+    const g = gesture;
+    const opts = { capture: true, passive: true };
+    gestureListeners = {
+        opts,
+        // Only start tracking touches that begin inside Roam's main UI (not
+        // dialogs, menus or the settings panel, which render outside .roam-body).
+        touchstart: (e) => {
+            if (e.target?.closest?.(".roam-body")) g._onTouchStart(e);
+        },
+        touchmove: g._onTouchMove,
+        touchend: g._onTouchEnd,
+        // TinyGesture ignores touchcancel. When the OS or Roam cancels a touch
+        // (system gesture, native long-press menu), touch1 is never cleared and
+        // the next touch is misread as a second finger, so that gesture is
+        // lost. Reset state instead of treating it as a gesture end.
+        touchcancel: () => {
+            const wasTracking = g.touch1 != null;
+            resetGestureState(g);
+            if (wasTracking) onCancel?.();
+        },
+    };
+    for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
+        document.addEventListener(type, gestureListeners[type], opts);
+    }
+}
+
+function detachGesture() {
+    if (gestureListeners) {
+        for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
+            document.removeEventListener(type, gestureListeners[type], gestureListeners.opts);
+        }
+        gestureListeners = null;
+    }
+    if (gesture && typeof gesture.destroy === "function") {
+        gesture.destroy(); // clears TinyGesture's long-press / double-tap timers
+    }
+    gesture = null;
+}
+
+function resetGestureState(g) {
+    clearTimeout(g.longPressTimer ?? undefined);
+    g.touch1 = null;
+    g.touch2 = null;
+    g.touchMove1 = null;
+    g.touchMove2 = null;
+    g.originalDistance = null;
+    g.newDistance = null;
+    g.scale = null;
+    g.originalAngle = null;
+    g.newAngle = null;
+    g.rotation = null;
+    pinchFired = false;
+    rotateFired = false;
+}
+
+function showDebugToast(text) {
+    let el = document.getElementById("ga-debug-toast");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "ga-debug-toast";
+        el.style.cssText =
+            "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:100000;" +
+            "background:rgba(32,32,32,0.9);color:#fff;padding:8px 14px;border-radius:6px;" +
+            "font-size:14px;pointer-events:none;";
+        document.body.appendChild(el);
+    }
+    el.textContent = `Gesture Actions: ${text}`;
+    clearTimeout(debugToastTimer);
+    debugToastTimer = setTimeout(() => {
+        document.getElementById("ga-debug-toast")?.remove();
+        debugToastTimer = null;
+    }, 2000);
+}
 
 function updateLeft(swipeL) {
     if (swipeL === "Forward one day") {
