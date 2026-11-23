@@ -3,6 +3,9 @@ import TinyGesture from "tinygesture";
 let gesture;
 let gestureListeners = null; // capture-phase listeners we own (removed on unload)
 let debugToastTimer = null;
+const BUILD_TAG = "2026-11-24"; // shown in debug notices so testers can confirm which build is running
+const OVERLAY_SELECTOR =
+    ".bp3-portal, .bp3-overlay, .bp3-popover, .bp3-dialog, .bp4-portal, .bp4-overlay, .bp5-portal, .bp5-overlay";
 let pinchFired = false;
 let rotateFired = false;
 const PINCH_SCALE_THRESHOLD = 0.2; // require ≥20% distance change before pinch fires once
@@ -125,7 +128,14 @@ export default {
                     id: "ga-debug",
                     name: "Show gesture notifications",
                     description: "Troubleshooting: briefly show an on-screen notice each time a gesture is recognised, and which action it triggered.",
-                    action: { type: "switch" },
+                    action: {
+                        type: "switch",
+                        onChange: (evt) => {
+                            const on = evt?.target?.checked ?? evt;
+                            // Immediate proof that notices render on this device.
+                            if (on === true) showDebugToast(`notifications on (build ${BUILD_TAG}) — try a gesture`, 4000);
+                        },
+                    },
                 },
             ],
         };
@@ -140,26 +150,47 @@ export default {
         updatePinch(extensionAPI.settings.get("ga-pinch"));
         updateRotate(extensionAPI.settings.get("ga-rotate"));
 
-        if (
-            window.roamAlphaAPI?.platform &&
-            (window.roamAlphaAPI.platform.isMobile ||
-                window.roamAlphaAPI.platform.isMobileApp ||
-                window.roamAlphaAPI.platform.isTouchDevice ||
-                window.roamAlphaAPI.platform.isIOS)
-        ) {
+        const platform = window.roamAlphaAPI?.platform;
+        const isTouchPlatform = !!(
+            platform &&
+            (platform.isMobile || platform.isMobileApp || platform.isTouchDevice || platform.isIOS)
+        );
+        const debugOn = () => extensionAPI.settings.get("ga-debug") === true;
+
+        // Proof of life for remote triage (issue #2): confirms which build is
+        // running, whether the platform guard passed, and whether .roam-body
+        // exists at load — none of which a mobile user can see otherwise.
+        if (debugOn()) {
+            const flags = platform
+                ? ["isMobile", "isMobileApp", "isTouchDevice", "isIOS"].filter((k) => platform[k]).join(",") || "none"
+                : "no platform API";
+            showDebugToast(
+                `loaded (build ${BUILD_TAG}) · listening: ${isTouchPlatform ? "yes" : "no"} · ` +
+                `roam-body: ${document.querySelector(".roam-body") ? "yes" : "no"} · ${flags}`,
+                6000
+            );
+        }
+
+        if (isTouchPlatform) {
             console.debug("Gesture Actions: attaching capture-phase touch handlers", {
-                isMobile: window.roamAlphaAPI.platform.isMobile,
-                isMobileApp: window.roamAlphaAPI.platform.isMobileApp,
-                isTouchDevice: window.roamAlphaAPI.platform.isTouchDevice,
-                isIOS: window.roamAlphaAPI.platform.isIOS,
+                isMobile: platform.isMobile,
+                isMobileApp: platform.isMobileApp,
+                isTouchDevice: platform.isTouchDevice,
+                isIOS: platform.isIOS,
             });
 
-            attachGesture(() => {
+            attachGesture({
                 // A cancel mid-gesture means the native app shell or OS claimed
                 // the touch — the key signal for issue #2 triage.
-                if (extensionAPI.settings.get("ga-debug") === true) {
-                    showDebugToast("touch cancelled by the app/OS");
-                }
+                onCancel: () => {
+                    if (debugOn()) showDebugToast("touch cancelled by the app/OS");
+                },
+                // Shown for every touch in debug mode; a recognised gesture's
+                // notice replaces it. If even this never appears, touches are
+                // not reaching the page's JavaScript at all.
+                onTouch: (e) => {
+                    if (debugOn()) showDebugToast(`touch received on ${describeTarget(e.target)}`);
+                },
             });
 
             const runGesture = (name, command) => {
@@ -209,10 +240,10 @@ export default {
 // TinyGesture binds bubble-phase listeners to the element it is given. In Roam
 // mobile, block-level touch handlers (swipe-to-indent, long-press menu) can stop
 // propagation before a touch bubbles up to .roam-body, so gestures never reach
-// us. We instead listen in the capture phase on `document`, which runs before
+// us. We instead listen in the capture phase on `window`, which runs before
 // any of Roam's handlers and does not depend on .roam-body existing at onload.
 // All listeners are passive: we never block scrolling or Roam's own handling.
-function attachGesture(onCancel) {
+function attachGesture({ onCancel, onTouch } = {}) {
     detachGesture(); // idempotent: never stack listeners on re-load
     const root = document.documentElement;
     gesture = new TinyGesture(root, { mouseSupport: false });
@@ -224,10 +255,14 @@ function attachGesture(onCancel) {
     const opts = { capture: true, passive: true };
     gestureListeners = {
         opts,
-        // Only start tracking touches that begin inside Roam's main UI (not
-        // dialogs, menus or the settings panel, which render outside .roam-body).
+        // Ignore touches that begin in overlays (dialogs, menus, popovers, the
+        // settings panel). Deliberately NOT scoped to .roam-body: the iOS app's
+        // layout may not nest content under it, which silently dropped every
+        // touch in the previous build.
         touchstart: (e) => {
-            if (e.target?.closest?.(".roam-body")) g._onTouchStart(e);
+            onTouch?.(e);
+            if (e.target?.closest?.(OVERLAY_SELECTOR)) return;
+            g._onTouchStart(e);
         },
         touchmove: g._onTouchMove,
         touchend: g._onTouchEnd,
@@ -242,14 +277,14 @@ function attachGesture(onCancel) {
         },
     };
     for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
-        document.addEventListener(type, gestureListeners[type], opts);
+        window.addEventListener(type, gestureListeners[type], opts);
     }
 }
 
 function detachGesture() {
     if (gestureListeners) {
         for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
-            document.removeEventListener(type, gestureListeners[type], gestureListeners.opts);
+            window.removeEventListener(type, gestureListeners[type], gestureListeners.opts);
         }
         gestureListeners = null;
     }
@@ -275,7 +310,14 @@ function resetGestureState(g) {
     rotateFired = false;
 }
 
-function showDebugToast(text) {
+function describeTarget(el) {
+    if (!el || !el.tagName) return "unknown";
+    const cls = typeof el.className === "string" ? el.className.trim().split(/\s+/).slice(0, 2).join(".") : "";
+    const inBody = el.closest?.(".roam-body") ? "in roam-body" : "outside roam-body";
+    return `${el.tagName.toLowerCase()}${cls ? "." + cls : ""} (${inBody})`;
+}
+
+function showDebugToast(text, durationMs = 2000) {
     let el = document.getElementById("ga-debug-toast");
     if (!el) {
         el = document.createElement("div");
@@ -291,7 +333,7 @@ function showDebugToast(text) {
     debugToastTimer = setTimeout(() => {
         document.getElementById("ga-debug-toast")?.remove();
         debugToastTimer = null;
-    }, 2000);
+    }, durationMs);
 }
 
 function updateLeft(swipeL) {
